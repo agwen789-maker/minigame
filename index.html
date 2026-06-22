@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="description" content="考研英语单词游戏 - 轻松背单词，快乐过考研">
+<meta property="og:title" content="考研英语单词游戏">
+<meta property="og:description" content="轻松背单词，快乐过考研">
+<meta property="og:type" content="website">
+<title>考研英语单词游戏</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app" id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">📚 考研单词</div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="App.openSettings()" title="设置">⚙️</button>
+      <button class="btn-icon" onclick="App.shareScore()" title="分享">📤</button>
+    </div>
+  </div>
+
+  <!-- Home View -->
+  <div class="view" id="homeView">
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-item"><div class="stat-value" id="statTotal">0</div><div class="stat-label">已练</div></div>
+      <div class="stat-item"><div class="stat-value" id="statRate">0%</div><div class="stat-label">正确率</div></div>
+      <div class="stat-item"><div class="stat-value" id="statStreak">0</div><div class="stat-label">最长连击</div></div>
+      <div class="stat-item"><div class="stat-value" id="statGames">0</div><div class="stat-label">场次</div></div>
+    </div>
+    <div class="game-modes" id="modeList"></div>
+    <div class="word-count" id="wordCount"></div>
+  </div>
+
+  <!-- Game View -->
+  <div class="view hidden" id="gameView">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <button class="btn-icon" onclick="App.backHome()" style="font-size:16px">←</button>
+      <span style="font-weight:600;font-size:16px" id="gameTitle">游戏</span>
+    </div>
+    <div class="game-area" id="gameArea">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="game-header">
+        <span id="gameProgress">0/0</span>
+        <span class="game-score" id="gameScore">⭐ 0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings View -->
+  <div class="view hidden" id="settingsView">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <button class="btn-icon" onclick="App.backHome()" style="font-size:16px">←</button>
+      <span style="font-weight:600;font-size:16px">设置</span>
+    </div>
+    <div class="game-area">
+      <div class="setting-item">
+        <span class="setting-label">🔊 发音</span>
+        <button class="toggle on" id="soundToggle" onclick="App.toggleSound()"></button>
+      </div>
+      <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:8px">
+        <span class="setting-label">📊 难度</span>
+        <div class="difficulty-select">
+          <button class="diff-btn" data-lv="0" onclick="App.setLevel(0)">全部</button>
+          <button class="diff-btn" data-lv="1" onclick="App.setLevel(1)">基础</button>
+          <button class="diff-btn" data-lv="2" onclick="App.setLevel(2)">进阶</button>
+          <button class="diff-btn" data-lv="3" onclick="App.setLevel(3)">挑战</button>
+        </div>
+      </div>
+      <div class="setting-item">
+        <span class="setting-label">📝 每轮题数</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-icon" style="width:32px;height:32px;font-size:14px" onclick="App.setCount(Math.max(5,App.settings.count-5))">-</button>
+          <span style="font-weight:600;min-width:24px;text-align:center" id="countDisplay">10</span>
+          <button class="btn-icon" style="width:32px;height:32px;font-size:14px" onclick="App.setCount(Math.min(50,App.settings.count+5))">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Share Sheet -->
+<div class="share-overlay" id="shareOverlay" onclick="App.closeShare()"></div>
+<div class="share-sheet" id="shareSheet">
+  <div class="share-title">📤 分享给好友</div>
+  <div class="share-options">
+    <button class="share-btn" style="background:#07C160;color:#fff" onclick="App.shareVia('wechat')" title="微信">💬</button>
+    <button class="share-btn" style="background:#E6162D;color:#fff" onclick="App.shareVia('weibo')" title="微博">📢</button>
+    <button class="share-btn" style="background:#12B7F5;color:#fff" onclick="App.shareVia('qq')" title="QQ">🐧</button>
+    <button class="share-btn" style="background:var(--card-hover);color:var(--text)" onclick="App.shareVia('copy')" title="复制链接">🔗</button>
+  </div>
+  <div class="share-link">
+    <input id="shareLinkInput" value="https://agwen789-maker.github.io/minigame" readonly>
+    <button onclick="App.copyLink()">复制</button>
+  </div>
+</div>
+
+<script src="js/words.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
