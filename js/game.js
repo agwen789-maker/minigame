@@ -56,10 +56,10 @@ const App = {
 
   renderHome() {
     const modes = [
-      { id:"quiz", icon:"🎯", name:"选择题", desc:"看英文选中文含义", color:"#6C63FF" },
-      { id:"flashcard", icon:"🃏", name:"闪卡", desc:"翻转卡片记忆单词", color:"#FF6584" },
-      { id:"spelling", icon:"✍️", name:"拼写", desc:"看中文拼英文单词", color:"#4ADE80" },
-      { id:"listening", icon:"🎧", name:"听力", desc:"听发音选正确单词", color:"#FFD700" },
+      { id:"quiz", icon:"\u{1F3AF}", name:"选择题", desc:"看英文选中文含义", color:"#6C63FF" },
+      { id:"flashcard", icon:"\u{1F0CF}", name:"闪卡", desc:"翻转卡片记忆单词", color:"#FF6584" },
+      { id:"spelling", icon:"\u270D\uFE0F", name:"拼写", desc:"看中文拼英文单词", color:"#4ADE80" },
+      { id:"listening", icon:"\u{1F3A7}", name:"听力", desc:"听发音选正确单词", color:"#FFD700" },
     ];
     document.getElementById("modeList").innerHTML = modes.map(m => 
       '<div class="mode-card slide-up" onclick="App.startGame(\'' + m.id + '\')">' +
@@ -68,7 +68,7 @@ const App = {
         '<div class="desc">' + m.desc + '</div>' +
       '</div>'
     ).join("");
-    document.getElementById("wordCount").textContent = "📚 词库: " + WORD_BANK.length + " 词";
+    document.getElementById("wordCount").textContent = "\u{1F4DA} 词库: " + WORD_BANK.length + " 词";
   },
 
   renderStats() {
@@ -87,26 +87,27 @@ const App = {
     this.answered = false;
     this.words = this.shuffle(this.getFilteredWords()).slice(0, this.settings.count || 10);
     this.showView("gameView");
-    document.getElementById("gameTitle").textContent = {
-      quiz:"选择题", flashcard:"闪卡", spelling:"拼写", listening:"听力"
-    }[mode] || "游戏";
+    const titles = { quiz:"选择题", flashcard:"闪卡", spelling:"拼写", listening:"听力" };
+    document.getElementById("gameTitle").textContent = titles[mode] || "游戏";
+    document.getElementById("gameArea").innerHTML = "";
     if (mode === "quiz") this.showQuiz();
     else if (mode === "flashcard") this.showFlashcard();
     else if (mode === "spelling") this.showSpelling();
     else if (mode === "listening") this.showListening();
+    this.showProgress();
   },
 
   showProgress() {
-    const pct = this.total > 0 ? (this.current / this.words.length * 100) : 0;
+    const pct = this.words.length > 0 ? (this.current / this.words.length * 100) : 0;
     document.getElementById("progressFill").style.width = Math.min(pct, 100) + "%";
-    document.getElementById("gameProgress").textContent = (this.current + 1) + "/" + this.words.length;
-    document.getElementById("gameScore").textContent = "⭐ " + this.score;
+    document.getElementById("gameScore").textContent = "\u2B50 " + this.score;
   },
 
   nextWord() {
     this.current++;
     this.answered = false;
     if (this.current >= this.words.length) return this.showResult();
+    this.showProgress();
     if (this.mode === "quiz") this.showQuiz();
     else if (this.mode === "flashcard") this.showFlashcard();
     else if (this.mode === "spelling") this.showSpelling();
@@ -121,26 +122,28 @@ const App = {
     setTimeout(() => t.remove(), 2000);
   },
 
-  // --- Quiz Mode ---
   showQuiz() {
     const w = this.words[this.current];
     if (!w) return this.showResult();
     this.total++;
-    document.getElementById("gameArea").innerHTML = 
+    const ga = document.getElementById("gameArea");
+    ga.innerHTML = 
       '<div class="word-display slide-up">' +
         '<div class="word-english">' + w.en + '</div>' +
-        '<button class="btn-speak" onclick="App.speak(\'' + w.en.replace(/'/g,"") + '\')">🔊</button>' +
+        '<button class="btn-speak" onclick="App.speak(\'' + this.escap(w.en) + '\')">\u{1F50A}</button>' +
       '</div>' +
       '<div class="options" id="options"></div>' +
       '<div class="feedback" id="feedback"></div>' +
-      '<button class="next-btn" id="nextBtn" onclick="App.nextWord()">下一题 →</button>';
-    this.showProgress();
+      '<button class="next-btn" id="nextBtn" onclick="App.nextWord()">下一题 \u2192</button>';
     
     const wrong = this.shuffle(this.words.filter(x => x.en !== w.en)).slice(0, 3).map(x => x.zh);
     const opts = this.shuffle([w.zh, ...wrong]);
-    const html = opts.map(o => '<button class="option-btn" onclick="App.answerQuiz(this,\'' + o.replace(/'/g,"") + '\')">' + o + '</button>').join("");
-    document.getElementById("options").innerHTML = html;
+    ga.querySelector("#options").innerHTML = opts.map(o => '<button class="option-btn" onclick="App.answerQuiz(this,\'' + this.escap(o) + '\')">' + o + '</button>').join("");
     if (this.settings.sound) setTimeout(() => this.speak(w.en), 300);
+  },
+
+  escap(s) {
+    return s.replace(/\'/g, "\\'").replace(/"/g, "&quot;");
   },
 
   answerQuiz(el, ans) {
@@ -154,24 +157,25 @@ const App = {
       document.querySelectorAll(".option-btn").forEach(b => { if (b.textContent === w.zh) b.classList.add("correct"); });
     }
     this.handleAnswer(correct);
-    document.getElementById("feedback").className = "feedback show " + (correct ? "correct" : "wrong");
-    document.getElementById("feedback").textContent = correct ? "✅ 正确! " + w.en + " = " + w.zh : "❌ " + w.en + " = " + w.zh;
+    const fb = document.getElementById("feedback");
+    fb.className = "feedback show " + (correct ? "correct" : "wrong");
+    fb.textContent = correct ? "\u2705 正确! " + w.en + " = " + w.zh : "\u274C " + w.en + " = " + w.zh;
     document.getElementById("nextBtn").classList.add("show");
+    this.showProgress();
     if (this.settings.sound) this.speak(w.en);
   },
 
-  // --- Flashcard Mode ---
   showFlashcard() {
     const w = this.words[this.current];
     if (!w) return this.showResult();
     this.total++;
     document.getElementById("gameArea").innerHTML = 
       '<div class="flashcard-container">' +
-        '<div class="flashcard" id="flashcard" onclick="document.getElementById(\'flashcard\').classList.toggle(\'flipped\')">' +
+        '<div class="flashcard" id="flashcard" onclick="this.classList.toggle(\'flipped\')">' +
           '<div class="flashcard-face">' +
             '<div style="font-size:40px;font-weight:700;margin-bottom:12px">' + w.en + '</div>' +
-            '<button class="btn-speak" onclick="event.stopPropagation();App.speak(\'' + w.en.replace(/'/g,"") + '\')">🔊</button>' +
-            '<div class="hint">👆 点击翻转</div>' +
+            '<button class="btn-speak" onclick="event.stopPropagation();App.speak(\'' + this.escap(w.en) + '\')">\u{1F50A}</button>' +
+            '<div class="hint">\u{1F446} 点击翻转</div>' +
           '</div>' +
           '<div class="flashcard-face flashcard-back">' +
             '<div style="font-size:28px;font-weight:600;color:var(--secondary);margin-bottom:8px">' + w.zh + '</div>' +
@@ -181,10 +185,9 @@ const App = {
         '</div>' +
       '</div>' +
       '<div class="flashcard-actions">' +
-        '<button class="flashcard-btn dunno" onclick="App.answerFlash(false)">😅 不认识</button>' +
-        '<button class="flashcard-btn know" onclick="App.answerFlash(true)">😎 认识</button>' +
+        '<button class="flashcard-btn dunno" onclick="App.answerFlash(false)">\u{1F605} 不认识</button>' +
+        '<button class="flashcard-btn know" onclick="App.answerFlash(true)">\u{1F60E} 认识</button>' +
       '</div>';
-    this.showProgress();
     if (this.settings.sound) setTimeout(() => this.speak(w.en), 500);
   },
 
@@ -193,10 +196,10 @@ const App = {
     this.answered = true;
     this.handleAnswer(know);
     this.showStreakBadge();
+    this.showProgress();
     setTimeout(() => this.nextWord(), know ? 600 : 1200);
   },
 
-  // --- Spelling Mode ---
   showSpelling() {
     const w = this.words[this.current];
     if (!w) return this.showResult();
@@ -205,18 +208,21 @@ const App = {
       '<div class="word-display slide-up">' +
         '<div style="font-size:28px;font-weight:700;margin-bottom:4px">' + w.zh + '</div>' +
         '<div style="color:var(--text-dim);font-size:13px;margin-bottom:12px">请输入对应的英文单词</div>' +
-        '<button class="btn-speak" onclick="App.speak(\'' + w.en.replace(/'/g,"") + '\')">🔊 听发音提示</button>' +
+        '<button class="btn-speak" onclick="App.speak(\'' + this.escap(w.en) + '\')">\u{1F50A} 听发音提示</button>' +
         '<input class="spelling-input" id="spellInput" placeholder="输入英文..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="if(event.key===\'Enter\')App.answerSpelling()">' +
       '</div>' +
       '<div class="feedback" id="feedback"></div>' +
-      '<button class="next-btn" id="nextBtn" onclick="App.nextWord()">下一题 →</button>';
-    this.showProgress();
-    setTimeout(() => document.getElementById("spellInput").focus(), 100);
+      '<button class="next-btn" id="nextBtn" onclick="App.nextWord()">下一题 \u2192</button>';
+    setTimeout(() => {
+      const el = document.getElementById("spellInput");
+      if (el) el.focus();
+    }, 100);
   },
 
   answerSpelling() {
     if (this.answered) return;
     const input = document.getElementById("spellInput");
+    if (!input) return;
     const ans = input.value.trim().toLowerCase();
     if (!ans) return;
     this.answered = true;
@@ -225,13 +231,14 @@ const App = {
     input.classList.add(correct ? "correct" : "wrong");
     input.disabled = true;
     this.handleAnswer(correct);
-    document.getElementById("feedback").className = "feedback show " + (correct ? "correct" : "wrong");
-    document.getElementById("feedback").textContent = correct ? "✅ 正确!" : "❌ 正确答案: " + w.en;
+    const fb = document.getElementById("feedback");
+    fb.className = "feedback show " + (correct ? "correct" : "wrong");
+    fb.textContent = correct ? "\u2705 正确!" : "\u274C 正确答案: " + w.en;
     document.getElementById("nextBtn").classList.add("show");
+    this.showProgress();
     if (this.settings.sound) this.speak(w.en);
   },
 
-  // --- Listening Mode ---
   showListening() {
     const w = this.words[this.current];
     if (!w) return this.showResult();
@@ -239,17 +246,15 @@ const App = {
     document.getElementById("gameArea").innerHTML = 
       '<div class="word-display slide-up">' +
         '<div style="font-size:16px;color:var(--text-dim);margin-bottom:12px">请听发音，选择正确的单词</div>' +
-        '<button class="btn-speak speaking" id="listenBtn" onclick="App.speak(\'' + w.en.replace(/'/g,"") + '\')">🔊 再听一次</button>' +
+        '<button class="btn-speak speaking" id="listenBtn" onclick="App.speak(\'' + this.escap(w.en) + '\')">\u{1F50A} 再听一次</button>' +
       '</div>' +
       '<div class="options" id="options"></div>' +
       '<div class="feedback" id="feedback"></div>' +
-      '<button class="next-btn" id="nextBtn" onclick="App.nextWord()">下一题 →</button>';
-    this.showProgress();
+      '<button class="next-btn" id="nextBtn" onclick="App.nextWord()">下一题 \u2192</button>';
     
     const wrong = this.shuffle(this.words.filter(x => x.en !== w.en)).slice(0, 3).map(x => x.en);
     const opts = this.shuffle([w.en, ...wrong]);
-    const html = opts.map(o => '<button class="option-btn" onclick="App.answerListening(this,\'' + o.replace(/'/g,"") + '\')">' + o + '</button>').join("");
-    document.getElementById("options").innerHTML = html;
+    document.getElementById("options").innerHTML = opts.map(o => '<button class="option-btn" onclick="App.answerListening(this,\'' + this.escap(o) + '\')">' + o + '</button>').join("");
     setTimeout(() => this.speak(w.en), 500);
   },
 
@@ -264,9 +269,11 @@ const App = {
       document.querySelectorAll(".option-btn").forEach(b => { if (b.textContent === w.en) b.classList.add("correct"); });
     }
     this.handleAnswer(correct);
-    document.getElementById("feedback").className = "feedback show " + (correct ? "correct" : "wrong");
-    document.getElementById("feedback").textContent = correct ? "✅ 正确! " + w.en + " = " + w.zh : "❌ " + w.en + " = " + w.zh;
+    const fb = document.getElementById("feedback");
+    fb.className = "feedback show " + (correct ? "correct" : "wrong");
+    fb.textContent = correct ? "\u2705 正确! " + w.en + " = " + w.zh : "\u274C " + w.en + " = " + w.zh;
     document.getElementById("nextBtn").classList.add("show");
+    this.showProgress();
   },
 
   handleAnswer(correct) {
@@ -289,7 +296,7 @@ const App = {
     if (this.streak > 0 && this.streak % 5 === 0) {
       const b = document.createElement("div");
       b.className = "streak-badge";
-      b.textContent = "🔥 " + this.streak + " 连击!";
+      b.textContent = "\u{1F525} " + this.streak + " 连击!";
       document.body.appendChild(b);
       setTimeout(() => b.remove(), 1500);
     }
@@ -299,7 +306,7 @@ const App = {
     this.stats.games++;
     this.saveStats();
     const pct = this.total > 0 ? Math.round(this.score / this.total * 100) : 0;
-    const msg = pct >= 90 ? "🏆 太棒了!" : pct >= 70 ? "👏 不错!" : pct >= 50 ? "💪 继续加油!" : "📚 多练练!";
+    const msg = pct >= 90 ? "\u{1F3C6} 太棒了!" : pct >= 70 ? "\u{1F44F} 不错!" : pct >= 50 ? "\u{1F4AA} 继续加油!" : "\u{1F4DA} 多练练!";
     document.getElementById("gameArea").innerHTML = 
       '<div class="result-screen slide-up">' +
         '<div class="result-score">' + pct + '%</div>' +
@@ -310,11 +317,12 @@ const App = {
           '<div class="result-detail"><div class="num" style="color:var(--gold)">' + this.bestStreak + '</div><div class="lbl">最长连击</div></div>' +
         '</div>' +
         '<div class="btn-group">' +
-          '<button class="btn-primary" onclick="App.startGame(App.mode)">🔄 再来一次</button>' +
-          '<button class="btn-secondary" onclick="App.backHome()">🏠 返回</button>' +
+          '<button class="btn-primary" onclick="App.startGame(App.mode)">\u{1F504} 再来一次</button>' +
+          '<button class="btn-secondary" onclick="App.backHome()">\u{1F3E0} 返回</button>' +
         '</div>' +
       '</div>';
     document.getElementById("progressFill").style.width = "100%";
+    document.getElementById("gameScore").textContent = "\u2B50 " + this.score;
     this.renderStats();
   },
 
@@ -326,7 +334,6 @@ const App = {
   toggleSound() {
     this.settings.sound = !this.settings.sound;
     document.getElementById("soundToggle").className = "toggle " + (this.settings.sound ? "on" : "off");
-    document.getElementById("soundToggle").textContent = this.settings.sound ? "" : "";
     this.saveSettings();
   },
 
@@ -367,7 +374,6 @@ const App = {
     const url = window.location.href;
     const text = "我在考研英语单词游戏中获得了 " + this.score + "/" + this.total + " (" + (this.total > 0 ? Math.round(this.score/this.total*100) : 0) + "%) 的好成绩！来挑战我吧！";
     const urls = {
-      wechat: "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(url),
       weibo: "https://service.weibo.com/share/share.php?title=" + encodeURIComponent(text) + "&url=" + encodeURIComponent(url),
       qq: "https://connect.qq.com/widget/shareqq/index.html?title=" + encodeURIComponent(text) + "&url=" + encodeURIComponent(url),
     };
@@ -380,8 +386,10 @@ const App = {
 
   copyLink() {
     const inp = document.getElementById("shareLinkInput");
-    inp.select();
-    navigator.clipboard.writeText(inp.value).then(() => this.showToast("已复制!"));
+    if (inp) {
+      inp.select();
+      navigator.clipboard.writeText(inp.value).then(() => this.showToast("已复制!"));
+    }
   },
 };
 
